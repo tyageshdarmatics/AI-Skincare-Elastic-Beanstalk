@@ -1,0 +1,8 @@
+{
+  "name": "AI Skincare Adviser",
+  "description": "Get a personalized skincare routine based on your past products, an AI analysis of your skin, and your goals. Powered by Google Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
