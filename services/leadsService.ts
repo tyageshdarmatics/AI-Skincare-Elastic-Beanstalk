@@ -9,30 +9,21 @@ export type LeadPayload = {
   email: string;
 };
 
-function trimTrailingSlash(url: string) {
-  return url.replace(/\/+$/, '');
-}
-
-function joinUrl(base: string, path: string) {
-  const cleanBase = trimTrailingSlash(base);
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
-}
-
-function getApiBase() {
-  const base = (import.meta.env.VITE_API_URL as string | undefined)
-    || (import.meta.env.VITE_LEADS_API_URL as string | undefined)
-    || '';
-  return base ? trimTrailingSlash(base) : '';
-}
-
 export async function submitLead(payload: LeadPayload) {
-  const apiBase = getApiBase();
-  const endpoint = apiBase ? joinUrl(apiBase, '/leads') : '/leads';
+  const apiBase = (import.meta.env.VITE_LEADS_API_URL as string | undefined) || 
+                (import.meta.env.VITE_API_URL as string | undefined) || 
+                '';
+  
+  // Ensure we always hit the /leads endpoint
+  const endpoint = apiBase.endsWith('/leads') 
+    ? apiBase 
+    : `${apiBase.replace(/\/$/, '')}/leads`;
 
   const res = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(payload),
   });
 
@@ -44,27 +35,29 @@ export async function submitLead(payload: LeadPayload) {
   return res.json();
 }
 
+/**
+ * Updates the user's history with current session data.
+ */
 export async function updateUserSession(userId: string, sessionData: any) {
-  const apiBase = getApiBase();
-  const endpoint = apiBase
-    ? joinUrl(apiBase, `/users/${encodeURIComponent(userId)}/history`)
-    : `/users/${encodeURIComponent(userId)}/history`;
+  // Prefer explicit API base, but fall back to same-origin route.
+  const apiBase = (import.meta.env.VITE_API_URL as string | undefined) || '';
 
+  const endpoint = `${apiBase}/users/${userId}/history`;
+  
   try {
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(sessionData),
     });
 
     if (!res.ok) {
-      console.warn('Failed to update session history:', res.status, res.statusText);
-      return null;
+      console.warn('Failed to update session history:', res.statusText);
     }
-
     return await res.json();
   } catch (err) {
     console.error('Error updating session history:', err);
-    return null;
   }
 }
